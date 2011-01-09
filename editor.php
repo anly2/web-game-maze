@@ -1,4 +1,59 @@
 <?php
+// Sub-Pages
+if(isset($_REQUEST['queue'])){
+   if(isset($_REQUEST['add'])){
+      $name = preg_replace(array("/ /", "/[^_a-zA-Z0-9]*/"), array("_", ""), $_REQUEST['name']);
+
+      $code = explode("\n", $_REQUEST['source']);
+      $details  = array_shift($code);
+      $specials = array_shift($code);
+      $grid     = join("\n", $code);
+
+      $details = preg_replace("/.*time.*=.*(\d+).*&.*start.*=((\d+)\.(\d+)|).*&.*end.*=((\d+)\.(\d+)|).*&.*next.*=.*/", "time=$1&start=$2&end=$5&next=", $details);
+      $specials = preg_replace("/[^pcbtvfso:\-\.,0-9]*/", "", $specials);
+      $grid = preg_replace("/[^\n\.0-9]*/", "", $grid);
+
+      $source = $details."\n".$specials."\n".$grid;
+      $n = count(glob('Queue/*'));
+      file_put_contents('Queue/'.$n.'.'.$name, $source);
+
+      if($_REQUEST['sent'] != 'true'){
+         $message  = '';
+         $message .= "Date: ".date()."\n";
+         $message .= "IP:".$_SERVER['REMOTE_ADDR']."\n";
+         $message .= "\n";
+         $message .= "Maze Name: ".$name."\n";
+         $message .= 'Link: <a href="http://localhost/Maze/editor.php?queue#i'.$n.'">Queue</a>';
+
+         mail('ankos2@hotmail.com', 'New Maze for Approval', $message);
+      }
+
+      echo '<script type="text/javascript">window.location.href="?";</script>';
+      exit;
+   }
+   if(isset($_REQUEST['approve'])){
+      $file = glob("Queue/".$_REQUEST['approve'].".*");
+      if(count($file)!=1){
+         echo 'File count too '.((count($file)>1)? 'big' : 'small').'('.count($file).'). Proccess Aborted!'."\n";
+         echo '<br /><a href="?queue">Back to Queue List</a>'."\n";
+         exit;
+      }
+      rename($file[0], "Mazes/".next(explode(".", basename($file[0]))));
+      echo '<script type="text/javascript">window.location.href="?queue";</script>';
+      exit;
+   }
+
+   echo '<a href="?">Back to Editor</a><br /><br />'."\n";
+   $awaiting = glob("Queue/*");
+   if(count($awaiting)<1)
+      echo '<em>No Pending Mazes</em>'."\n";
+   else
+      foreach($awaiting as $k=>$v)
+         echo "#".($k+1)." &nbsp; &nbsp; <strong>".next(explode(".", basename($v))).'</strong> : &nbsp; &nbsp; <small><a href="'.$v.'">Code</a></small> &nbsp; <small><a href="./?level=../'.$v.'">View</a></small> &nbsp; <small><a href="?queue&approve='.($k+1).'">Approve</a></small>';
+   exit;
+}
+
+
 //Javascript
 js:
 if(isset($_REQUEST['js'])){
@@ -49,6 +104,9 @@ if(isset($_REQUEST['js'])){
       echo "\n";
       echo '   if(evn.type=="keyup")'."\n";
       echo '      return;'."\n";
+      echo '   if(document.activeElement!=document.body)'."\n";
+      echo '      if(evn.keyCode>=49 && evn.keyCode<=58)'."\n";
+      echo '         return false;'."\n";
       echo "\n";
       echo "\n";
       echo '   if(keys["toggleSE"].indexOf(evn.keyCode)!=-1)'."\n";
@@ -164,6 +222,7 @@ if(isset($_REQUEST['js'])){
       echo '   specials["traps"]    = new Array();'."\n";
       echo '   specials["speeds"]   = new Array();'."\n";
       echo '   specials["orbs"]     = new Array();'."\n";
+      echo '   specials["closures"]  = new Array();'."\n";
       echo '   specials["pending"]  = new Array();'."\n";
       echo '      specials[2] = specials["portals"];'."\n";
       echo '      specials[3] = specials["shadows"];'."\n";
@@ -279,6 +338,7 @@ if(isset($_REQUEST['js'])){
       echo '            document.getElementById("special:6.name").style.display = "none";'."\n";
       echo '            document.getElementById("special:6.keys").style.display = "none";'."\n";
       echo '            document.getElementById("special:6.pending").style.display = "";'."\n";
+      echo '            document.getElementById("special:6.input").focus();'."\n";
       echo '            listSpecials(6);'."\n";
       echo '         }'."\n";
       echo "\n";
@@ -299,6 +359,7 @@ if(isset($_REQUEST['js'])){
       echo '            document.getElementById("special:7.name").style.display = "none";'."\n";
       echo '            document.getElementById("special:7.keys").style.display = "none";'."\n";
       echo '            document.getElementById("special:7.pending").style.display = "";'."\n";
+      echo '            document.getElementById("special:7.input").focus();'."\n";
       echo '            listSpecials(7);'."\n";
       echo '         }'."\n";
       echo "\n";
@@ -316,6 +377,10 @@ if(isset($_REQUEST['js'])){
       echo '         lastSpecial = 8;'."\n";
       echo "\n";
       echo '         break;'."\n";
+      echo '      case 9:'."\n";
+      echo '         //Closure'."\n";
+      echo '         specials["closures"].push(ele)-1;'."\n";
+      echo '         return true;'."\n";
       echo '      default:'."\n";
       echo '         lastSpecial = -1;'."\n";
       echo '   }'."\n";
@@ -364,6 +429,8 @@ if(isset($_REQUEST['js'])){
       echo '         document.getElementById("special:6.name").style.display = "";'."\n";
       echo '         document.getElementById("special:6.keys").style.display = "";'."\n";
       echo '         document.getElementById("special:6.pending").style.display = "none";'."\n";
+      echo '         document.getElementById("special:6.input").value = "";'."\n";
+      echo '         document.getElementById("special:6.input").blur();'."\n";
       echo '         break;'."\n";
       echo "\n";
       echo '      case 7:'."\n";
@@ -372,6 +439,8 @@ if(isset($_REQUEST['js'])){
       echo '         document.getElementById("special:7.name").style.display = "";'."\n";
       echo '         document.getElementById("special:7.keys").style.display = "";'."\n";
       echo '         document.getElementById("special:7.pending").style.display = "none";'."\n";
+      echo '         document.getElementById("special:7.input").value = "";'."\n";
+      echo '         document.getElementById("special:7.input").blur();'."\n";
       echo '         break;'."\n";
       echo '   }'."\n";
       echo "\n";
@@ -577,6 +646,9 @@ if(isset($_REQUEST['js'])){
       echo '   var time  = ( (y(topMost)-1-my)*(mx-1-x(leftMost)) )/3;'."\n";
       echo '   var code  = "time="+(Math.round(time)-(-3))+"&start="+convert(start)+"&end="+convert(end)+"&next=\n";'."\n";
       echo "\n";
+      echo '   //Closures'."\n";
+      echo '   for(i=0; i<specials["closures"].length; i++)'."\n";
+      echo '      code += "c"+convert(specials["closures"][i])+",";'."\n";
       echo '   //Portals'."\n";
       echo '   for(i=0; i<specials[2].length; i++)'."\n";
       echo '      code += "p"+convert(specials[2][i][0])+"-"+convert(specials[2][i][1])+",";'."\n";
@@ -588,10 +660,10 @@ if(isset($_REQUEST['js'])){
       echo '      code += "t"+convert(specials[4][i][0])+":"+convert(specials[4][i][1])+"-"+specials[4][i][2]+",";'."\n";
       echo '   //Traps'."\n";
       echo '   for(i=0; i<specials[6].length; i++)'."\n";
-      echo '      code += "f"+convert(specials[6][i][0])+":"+special[6][i][1]+",";'."\n";
+      echo '      code += "f"+convert(specials[6][i][0])+":"+specials[6][i][1]+",";'."\n";
       echo '   //Speeds'."\n";
       echo '   for(i=0; i<specials[7].length; i++)'."\n";
-      echo '      code += "s"+convert(specials[7][i][0])+":"+special[7][i][1]+",";'."\n";
+      echo '      code += "s"+convert(specials[7][i][0])+":"+specials[7][i][1]+",";'."\n";
       echo '   //Orbs'."\n";
       echo '   for(i=0; i<specials[8].length; i++)'."\n";
       echo '      code += "o"+convert(specials[8][i])+",";'."\n";
@@ -611,15 +683,24 @@ if(isset($_REQUEST['js'])){
       echo '      code = code.substr(0, code.length-1)+"\n";'."\n";
       echo '   }'."\n";
       echo "\n";
-      echo '   var source = document.getElementById("source");'."\n";
-      echo '   source.innerHTML = code;'."\n";
-      echo '   source.style.display = "";'."\n";
-      echo '   document.getElementById("source:hide").style.display = "";'."\n";
+      echo '   document.getElementById("source:code").value = code;'."\n";
+      echo '   document.getElementById("source:container").style.display = "";'."\n";
       echo '}'."\n";
       echo "\n";
       echo 'function convert(pos){'."\n";
       echo '   if(!pos || typeof pos != "string") return "";'."\n";
       echo '   return (y(topMost) - y(pos) -1)+"."+(x(pos) - x(leftMost) -1);'."\n";
+      echo '}'."\n";
+      echo "\n";
+      echo 'var submitName = false;'."\n";
+      echo 'function submit_(){'."\n";
+      echo '   if(submitName===false){'."\n";
+      echo '      submitName = prompt("Choose a name for the maze");'."\n";
+      echo '      if(submitName.split(" ").join("").length<=0) submitName = "New Maze";'."\n";
+      echo '   }'."\n";
+      echo '   document.getElementById("source:sent").value = "true";'."\n";
+      echo '   document.getElementById("source:name").value = submitName;'."\n";
+      echo '   document.getElementById("source:form").submit();'."\n";
       echo '}'."\n";
    }
    exit;
@@ -788,6 +869,8 @@ body:{
          echo '                                       </td> '."\n";
          echo '                                    </tr> '."\n";
          echo '                              </table> '."\n";
+         echo '                                 <script type="text/javascript">var toggleRemoves_old = toggleRemoves; toggleRemoves = function(a, b, c){ if(a==2&&c){document.getElementById("special:2.closure").style.display=(b==1? "" : "none");}  toggleRemoves_old(a,b,c);};</script>'."\n";
+         echo '                                 <em id="special:2.closure"    style="display:none;" onclick="alter(9); listSpecials(0);"><a><small>Make &quot;<b>destination-only</b>&quot; block</small></a><br /></em>'."\n";
          echo '                                 <em id="special:2.remove"     style="display:none;" onclick="removeSpecial(2);"><a><small>Remove <b>Portals</b> from current block</small></a><br /></em>'."\n";
          echo '                                 <em id="special:2.remove:all" style="display:none;" onclick="removeSpecial(1);"><a><small>Remove <b>All Specials</b> from current block</small></a></em>'."\n";
          echo '                           </td> '."\n";
@@ -913,9 +996,9 @@ body:{
          echo '                                       <td id="special:6.pending" style="display:none;">'."\n";
          echo '                                          <table>'."\n";
          echo '                                             <tr>'."\n";
-         echo '                                                <td style="text-align:center;"><small>Choose the penelty <!--<br /> for the</small> <br /> <strong>Trap</strong>-->:</td>'."\n";
-         echo '                                                <td style="text-align:center; vertical-align:middle;"><input type="text" id="special:6.input" style="width:20px; margin:10px;" onclick="stopBubble(event);" title="The penelty in seconds. Leave blank for default" /></td>'."\n";
-         echo '                                                <td><button style="width:23px;"><strong>7</strong></button><br /><button style="width:23px;"><strong>E</strong></button></td>'."\n";
+         echo '                                                <td style="text-align:center;"><small>Choose the penelty <!--<br /> for the</small> <br /> <strong>Trap</strong>--></td>'."\n";
+         echo '                                                <td style="text-align:center; vertical-align:middle;"><input type="text" id="special:6.input" style="width:20px; margin:10px;" onclick="stopBubble(event);" onkeydown="if(event.keyCode>=49 && event.keyCode<=58) stopBubble(event); else return false;" title="The penelty in seconds. Leave blank for default" /></td>'."\n";
+         echo '                                                <td><button style="width:23px;"><strong>E</strong></button></td>'."\n";
          echo '                                             </tr>'."\n";
          echo '                                          </table>'."\n";
          echo '                                       </td>'."\n";
@@ -941,8 +1024,8 @@ body:{
          echo '                                          <table>'."\n";
          echo '                                             <tr>'."\n";
          echo '                                                <td style="text-align:center;"><small>Choose the bonus <!--<br /> of the</small> <br /> <strong>Speed Boost</strong>-->:</td>'."\n";
-         echo '                                                <td style="text-align:center; vertical-align:middle;"><input type="text" size="1" id="special:7.input" style="width:20px; margin:10px;" onclick="stopBubble(event);" title="The bonus in seconds. Leave blank for default" /></td>'."\n";
-         echo '                                                <td><button style="width:23px;"><strong>8</strong></button><br /><button style="width:23px;"><strong>E</strong></button></td>'."\n";
+         echo '                                                <td style="text-align:center; vertical-align:middle;"><input type="text" size="1" id="special:7.input" style="width:20px; margin:10px;" onclick="stopBubble(event);" onkeydown="if(event.keyCode>=49 && event.keyCode<=58) stopBubble(event); else return false;" title="The bonus in seconds. Leave blank for default" /></td>'."\n";
+         echo '                                                <td><button style="width:23px;"><strong>E</strong></button></td>'."\n";
          echo '                                             </tr>'."\n";
          echo '                                          </table>'."\n";
          echo '                                       </td>'."\n";
@@ -971,6 +1054,7 @@ body:{
          echo '                           </td>'."\n";
          echo '                        </tr>'."\n";
          }
+
          echo "\n";
          echo '                     </table>'."\n";
          echo '                  </div>'."\n";
@@ -1000,12 +1084,18 @@ echo '<table width="100%" height="100%" style="margin-top:35px;">'."\n";
    }
    cont_source:{
    echo '   <tr>'."\n";
-   echo '      <td width="80%" align="center" valign="middle">'."\n";
+   echo '      <td id="source:container" style="display:none;" width="80%" align="center" valign="middle">'."\n";
+   echo '      <form id="source:form" action="?queue&add" method="POST">'."\n";
    echo "\n";
-   echo '         <button id="source:hide" style="display:none" onclick="document.getElementById(\'source\').style.display=\'none\'; this.style.display=\'none\';">Hide Source</button>'."\n";
-   echo '         <br />'."\n";
-   echo '         <textarea id="source" style="display:none; text-align: center; width:400px; height:60px;">'."\n";
-   echo '         </textarea>'."\n";
+   echo '            <div style="width:400px;">'."\n";
+   echo '               <button id="source:hide"   style="float:left;"  onclick="document.getElementById(\'source:container\').style.display=\'none\';">Hide Source</button>'."\n";
+   echo '               <button id="source:submit" style="float:right;" onclick="submit_()">Submit</button>'."\n";
+   echo '            </div>'."\n";
+   echo "\n";
+   echo '            <input type="hidden" id="source:sent" name="sent" value="false" />'."\n";
+   echo '            <input type="hidden" id="source:name" name="name" value="" />'."\n";
+   echo '            <textarea id="source:code" name="source" style="text-align: center; width:400px; height:60px;"></textarea>'."\n";
+   echo '         </form>'."\n";
    echo "\n";
    echo '      </td>'."\n";
    echo '   </tr>'."\n";
