@@ -1,0 +1,13 @@
+portal:  (pP1-P2)     Moves you from P1 (position 1) to P2 (position 2)
+shadow:  (bP)         A visible block that blocks sight. Can move through but cannot see through
+trigger: (tP1:P2-C1)  When you move over P1 (position 1), P2 (position 2) changes to C1 (class 1)
+veil:    (vP)         DEFINE AT END to hide any color denotaion of another special for that block
+trap:    (fP:N)       A block that applies penelty to your time. Similar to bumping in walls but often worse
+speed:   (sP:N)       A block that gives you more time. Oposite of a trap
+orb:     (oP)         When you take an orb your visibility improves. Has same effect as playing a lower difficulty with a head start
+
+Note: Multiple "specials" are possible for 1 position
+Note: Veils may hide the color denotations for specials on the maze map. Even if it is not used the block will still have only the color of one special(not a mix of all)
+
+
+(p1.21-5.12,b4.18,...)
