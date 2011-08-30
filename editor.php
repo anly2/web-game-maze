@@ -173,7 +173,7 @@ if(isset($_REQUEST['js'])){
       echo '      specials[7] = specials["speeds"];'."\n";
       echo '      specials[8] = specials["orbs"];'."\n";
       echo "\n";
-      echo '      specials[2].color = "#8264b1";'."\n";
+      echo '      specials[2].color = "lightblue";'."\n";
       echo '      specials[3].color = "#f8f8f8";'."\n";
       echo '      specials[4].color = "#f8f8f8";'."\n";
       echo '      specials[5].color = "#ffffff";'."\n";
@@ -185,7 +185,7 @@ if(isset($_REQUEST['js'])){
       echo "\n";
       echo 'function alter(type, ele){'."\n";
       echo '   if(!current && !ele) return false;'."\n";
-      echo '   if(current) ele = current;'."\n";
+      echo '   if(!ele) ele = current;'."\n";
       echo "\n";
       echo '   switch(type){'."\n";
       echo '      case 0:'."\n";
@@ -320,7 +320,7 @@ if(isset($_REQUEST['js'])){
       echo '         lastSpecial = -1;'."\n";
       echo '   }'."\n";
       echo "\n";
-      echo '   ele.style.backgroundColor = ele.prevBackgroundColor = specials[i].color;'."\n";
+      echo '   document.getElementById(ele).style.backgroundColor = document.getElementById(ele).prevBackgroundColor = (specials[type])? specials[type].color : color;'."\n";
       echo '}'."\n";
       echo "\n";
       echo "\n";
@@ -388,17 +388,23 @@ if(isset($_REQUEST['js'])){
       echo '   if(type==1){'."\n";
       echo '      for(i=2; i<=8; i++)'."\n";
       echo '         for(s=0; s<specials[i].length; s++)'."\n";
-      echo '            if(specials[i][s].length){ //If Array'."\n";
-      echo '               if(specials[i][s][0] == pos || specials[i][s][1] == pos)'."\n";
+      echo '            if(specials[i][s].constructor == Array){ //If Array'."\n";
+      echo '               if( (j = specials[i][s].indexOf(pos)) != -1){'."\n";
+      echo '                  var secondary = specials[i][s][1-j]'."\n";
       echo '                  specials[i].splice(s, 1);'."\n";
+      echo '                  refreshPosition( secondary );'."\n";
+      echo '               }'."\n";
       echo '            }else'."\n";
       echo '               if(specials[i][s] == pos)'."\n";
       echo '                  specials[i].splice(s, 1);'."\n";
       echo '   }else'."\n";
       echo '      for(s=0; s<specials[type].length; s++)'."\n";
-      echo '         if(specials[type][s].length){ //If Array'."\n";
-      echo '            if(specials[type][s][0] == pos || specials[type][s][1] == pos)'."\n";
-      echo '               specials[type].splice(s, 1);'."\n";
+      echo '         if(specials[type][s].constructor == Array){ //If Array'."\n";
+      echo '               if( (j=specials[type][s].indexOf(pos)) != -1){'."\n";
+      echo '                  var secondary = specials[type][s][1-j]'."\n";
+      echo '                  specials[type].splice(s, 1);'."\n";
+      echo '                  refreshPosition( secondary );'."\n";
+      echo '               }'."\n";
       echo '         }else'."\n";
       echo '            if(specials[type][s] == pos)'."\n";
       echo '               specials[type].splice(s, 1);'."\n";
@@ -409,9 +415,11 @@ if(isset($_REQUEST['js'])){
       echo 'function refreshPosition(pos){'."\n";
       echo '   var ele = document.getElementById(pos);'."\n";
       echo "\n";
+      echo '   ele.style.backgroundColor = ele.prevBackgroundColor = "#ffffff";'."\n";
+      echo "\n";
       echo '   for(i=2; i<=8; i++)'."\n";
       echo '      for(s=0; s<specials[i].length; s++)'."\n";
-      echo '         if(specials[i][s].length){ //If Array'."\n";
+      echo '         if(specials[i][s].constructor == Array){ //If Array'."\n";
       echo '            if(specials[i][s][0] == pos || specials[i][s][1] == pos)'."\n";
       echo '               ele.style.backgroundColor = ele.prevBackgroundColor = specials[i].color;'."\n";
       echo '         }else'."\n";
@@ -638,7 +646,7 @@ if(isset($_REQUEST['css'])){
       echo '}'."\n";
       echo 'em a:hover small{'."\n";
       echo '   text-decoration: underline;'."\n";
-      echo '   font-weight:bold;'."\n";
+//      echo '   font-weight:bold;'."\n";
       echo '}'."\n";
    }
    exit;
@@ -905,7 +913,7 @@ body:{
          echo '                                          <table>'."\n";
          echo '                                             <tr>'."\n";
          echo '                                                <td style="text-align:center;"><small>Choose the penelty <!--<br /> for the</small> <br /> <strong>Trap</strong>-->:</td>'."\n";
-         echo '                                                <td style="text-align:center; vertical-align:middle;"><input type="text" id="special:6.input" style="width:20px; margin:10px;" title="The penelty in seconds. Leave blank for default" /></td>'."\n";
+         echo '                                                <td style="text-align:center; vertical-align:middle;"><input type="text" id="special:6.input" style="width:20px; margin:10px;" onclick="stopBubble(event);" title="The penelty in seconds. Leave blank for default" /></td>'."\n";
          echo '                                                <td><button style="width:23px;"><strong>7</strong></button><br /><button style="width:23px;"><strong>E</strong></button></td>'."\n";
          echo '                                             </tr>'."\n";
          echo '                                          </table>'."\n";
@@ -932,7 +940,7 @@ body:{
          echo '                                          <table>'."\n";
          echo '                                             <tr>'."\n";
          echo '                                                <td style="text-align:center;"><small>Choose the bonus <!--<br /> of the</small> <br /> <strong>Speed Boost</strong>-->:</td>'."\n";
-         echo '                                                <td style="text-align:center; vertical-align:middle;"><input type="text" size="1" id="special:7.input" style="width:20px; margin:10px;" title="The bonus in seconds. Leave blank for default" /></td>'."\n";
+         echo '                                                <td style="text-align:center; vertical-align:middle;"><input type="text" size="1" id="special:7.input" style="width:20px; margin:10px;" onclick="stopBubble(event);" title="The bonus in seconds. Leave blank for default" /></td>'."\n";
          echo '                                                <td><button style="width:23px;"><strong>8</strong></button><br /><button style="width:23px;"><strong>E</strong></button></td>'."\n";
          echo '                                             </tr>'."\n";
          echo '                                          </table>'."\n";
