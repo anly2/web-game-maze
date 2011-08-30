@@ -354,7 +354,7 @@ if(isset($_REQUEST['js'])){
 
 
 
-fetch_maze:
+fetch_maze:{
    $name = 'Mazes/'.((isset($_REQUEST['level']))? $_REQUEST['level'] : 1);
    if(!file_exists($name))
       exit("<strong><big>Sorry, Maze ".basename($name)." not found!</big></strong>");
@@ -362,9 +362,10 @@ fetch_maze:
    $codeline = file($name);
    parse_str(trim(array_shift($codeline)), $details);
    $special = explode(",", trim(array_shift($codeline)));
+}
 
 
-mode:
+mode:{
    //$visibility = (($mode[0] == 0 && $ref_mode[0] == 2) || $mode[0] == 1)? $mode[0] : 2;
       // $visibility == 0  -->  "All            Visible"
       // $visibility == 1  -->  "Already Passed Visible"
@@ -377,9 +378,10 @@ mode:
 
    $visibility = isset($_REQUEST['mode'])? substr($_REQUEST['mode'], 0, 1)  :  2;
    $timer_type = isset($_REQUEST['mode'])? substr($_REQUEST['mode'], 1, 1)  :  1;
+}
 
 
-grid:
+grid:{
    $grid = '';
    $indent = '            ';
 
@@ -392,9 +394,10 @@ grid:
 
       $grid .= $indent.'</tr>'."\n";
    }
+}
 
 
-specials:
+specials:{
 $specials = '<script type="text/javascript">'."\n";
 foreach($special as $def_str){
    switch(substr($def_str, 0, 1)){
@@ -404,6 +407,11 @@ foreach($special as $def_str){
          $specials .= '   extendEvent( "'.current(explode("-", substr($def_str, 1))).'", "mark", function(){move("'.next(explode("-", substr($def_str, 1))).'");} );'."\n";
          $specials .= '   document.getElementById("'.next(explode("-", substr($def_str, 1))).'").style.backgroundColor = "lightblue";'."\n";
          $specials .= '   extendEvent( "'.next(explode("-", substr($def_str, 1))).'", "mark", function(){move("'.current(explode("-", substr($def_str, 1))).'");} );'."\n";
+         $specials .= "\n";
+         break;
+      case "c":
+         $specials .= '//Closed Portal'."\n";
+         $specials .= '   extendEvent( "'.substr($def_str, 1).'", "mark", function(){tpSickness = true;} );'."\n";
          $specials .= "\n";
          break;
       case "b":
@@ -420,14 +428,16 @@ foreach($special as $def_str){
          break;
       case "s":
          $specials .= '//Speed Boost'."\n";
+         $specials .= '   if(typeof document.getElementById("'.current(explode(":", substr($def_str, 1))).'").trueBackgroundColor == "undefined") document.getElementById("'.current(explode(":", substr($def_str, 1))).'").trueBackgroundColor =  document.getElementById("'.current(explode(":", substr($def_str, 1))).'").style.backgroundColor;'."\n";
          $specials .= '   document.getElementById("'.current(explode(":", substr($def_str, 1))).'").style.backgroundColor = "#a4ffda";'."\n";
-         $specials .= '   extendEvent( "'.current(explode(":", substr($def_str, 1))).'", "mark", function(){var ele = document.getElementById("'.current(explode(":", substr($def_str, 1))).'"); if(!ele.extracted){ applyPenelty('.(next(explode(":", substr($def_str, 1)))? "-".next(explode(":", substr($def_str, 1))) : '-'.($visibility+2)).'); ele.extracted = true;} } );'."\n";
+         $specials .= '   extendEvent( "'.current(explode(":", substr($def_str, 1))).'", "mark", function(){var ele = document.getElementById("'.current(explode(":", substr($def_str, 1))).'"); if(!ele.extracted){ applyPenelty('.(next(explode(":", substr($def_str, 1)))? "-".next(explode(":", substr($def_str, 1))) : '-'.($visibility+2)).'); ele.extracted = true; ele.prevBackgroundColor = ele.trueBackgroundColor;} } );'."\n";
          $specials .= "\n";
          break;
       case "o":
          $specials .= '//Orb'."\n";
+         $specials .= '   if(typeof document.getElementById("'.substr($def_str, 1).'").trueBackgroundColor == "undefined") document.getElementById("'.substr($def_str, 1).'").trueBackgroundColor = document.getElementById("'.substr($def_str, 1).'").style.backgroundColor;'."\n";
          $specials .= '   document.getElementById("'.substr($def_str, 1).'").style.backgroundColor = "#8264b1";'."\n";
-         $specials .= '   extendEvent( "'.substr($def_str, 1).'", "mark", function(){ var ele = document.getElementById("'.substr($def_str, 1).'"); if(!ele.extracted){ visibility = Math.max(0, visibility-1); ele.extracted = true; } });'."\n";
+         $specials .= '   extendEvent( "'.substr($def_str, 1).'", "mark", function(){ var ele = document.getElementById("'.substr($def_str, 1).'"); if(!ele.extracted){ visibility = Math.max(0, visibility-1); ele.extracted = true; ele.prevBackgroundColor = ele.trueBackgroundColor} });'."\n";
          $specials .= "\n";
          break;
       case "t":
@@ -438,15 +448,16 @@ foreach($special as $def_str){
          break;
       case "v":
          $specials .= '//Veil'."\n";
+         $specials .= '   document.getElementById("'.substr($def_str, 1).'").trueBackgroundColor   = "#ffffff";'."\n";
          $specials .= '   document.getElementById("'.substr($def_str, 1).'").style.backgroundColor = "#ffffff";'."\n";
          $specials .= "\n";
          break;
    }
 }
 $specials .= '</script>'."\n";
+}
 
-
-head:
+head:{
 echo '<head>'."\n";
 echo '   <title>Maze: '.basename($name).'</title>'."\n";
 echo "\n";
@@ -466,9 +477,9 @@ echo '         border-collapse: collapse'."\n";
 echo '      }'."\n";
 echo '   </style>'."\n";
 echo '</head>'."\n";
+}
 
-
-body:
+body:{
 echo '<body>'."\n";
 
 echo '<table width="100%" height="100%">'."\n";
@@ -479,7 +490,6 @@ echo '         <div id="timer" style="font-weight:bold;"></div>'."\n";
 echo '         <table id="maze">'."\n";
 echo              $grid;
 echo '         </table>'."\n";
-echo '         <script type="text/javascript">document.getElementById("'.$details['end'].'").style.backgroundColor = "orange";</script>'."\n";
 echo '         <script type="text/javascript">'."\n";
 echo '            var r = c = 0;'."\n";
 echo '            while(document.getElementById(r+"."+c)){'."\n";
@@ -491,6 +501,7 @@ echo '               r++; c=0;'."\n";
 echo '            }'."\n";
 echo '         </script>'."\n";
 echo $specials;
+echo '         <script type="text/javascript">document.getElementById("'.$details['end'].'").style.backgroundColor = "orange";</script>'."\n";
 echo "\n";
 echo '      </td>'."\n";
 echo '   </tr>'."\n";
@@ -503,4 +514,9 @@ echo '   </tr>'."\n";
 echo '</table>'."\n";
 
 echo '</body>'."\n";
+}
+
+end:{
+echo '</html>'."\n";
+}
 ?>
