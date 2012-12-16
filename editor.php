@@ -1,6 +1,14 @@
 <?php
 // Sub-Pages
 if(isset($_REQUEST['queue'])){
+   if(isset($_REQUEST['form'])){
+      echo '         <form id="source:form" action="?queue&add" method="POST">'."\n";
+      echo '            <input type="hidden" id="source:sent" name="sent" value="false" />'."\n";
+      echo '            <input type="hidden" id="source:name" name="name" value="" />'."\n";
+      echo '            <textarea id="source:code" name="source" style="text-align: center; width:400px; height:60px;"></textarea>'."\n";
+      echo '         </form>'."\n";
+      exit;
+   }
    if(isset($_REQUEST['add'])){
       $name = preg_replace(array("/ /", "/[^_a-zA-Z0-9]*/"), array("_", ""), $_REQUEST['name']);
 
@@ -18,17 +26,16 @@ if(isset($_REQUEST['queue'])){
       file_put_contents('Queue/'.$n.'.'.$name, $source);
 
       if($_REQUEST['sent'] != 'true'){
-         $message  = '';
-         $message .= "Date: ".date()."\n";
-         $message .= "IP:".$_SERVER['REMOTE_ADDR']."\n";
-         $message .= "\n";
-         $message .= "Maze Name: ".$name."\n";
-         $message .= 'Link: <a href="http://localhost/Maze/editor.php?queue#i'.$n.'">Queue</a>';
-
-         mail('ankos2@hotmail.com', 'New Maze for Approval', $message);
+         $new['message']  = "Date: ".date('l jS \of F Y h:i:s A')."<br />\n";
+         $new['message'] .= "IP: ".$_SERVER['REMOTE_ADDR']."<br />\n";
+         $new['message'] .= "<br />\n";
+         $new['message'] .= "Maze Name: ".$name."<br />\n";
+         $new['message'] .= 'Link: <a href="http://localhost/Maze/editor.php?queue#i'.$n.'" target="_BLANK">Queue</a>'."<br />\n";
+         $new['type'] = "maze";
+         include "../pending.php";
       }
 
-      echo '<script type="text/javascript">window.location.href="?";</script>';
+      echo '<script type="text/javascript">window.close();</script>';
       exit;
    }
    if(isset($_REQUEST['approve'])){
@@ -39,6 +46,10 @@ if(isset($_REQUEST['queue'])){
          exit;
       }
       rename($file[0], "Mazes/".next(explode(".", basename($file[0]))));
+      $old['type']  = "maze";
+      $old['index'] = $_REQUEST['approve']+1;
+      include "../pending.php";
+
       echo '<script type="text/javascript">window.location.href="?queue";</script>';
       exit;
    }
@@ -49,7 +60,7 @@ if(isset($_REQUEST['queue'])){
       echo '<em>No Pending Mazes</em>'."\n";
    else
       foreach($awaiting as $k=>$v)
-         echo "#".($k+1)." &nbsp; &nbsp; <strong>".next(explode(".", basename($v))).'</strong> : &nbsp; &nbsp; <small><a href="'.$v.'">Code</a></small> &nbsp; <small><a href="./?level=../'.$v.'">View</a></small> &nbsp; <small><a href="?queue&approve='.($k+1).'">Approve</a></small>';
+         echo '<a name="i'.($k).'">#'.($k+1)."</a> &nbsp; &nbsp; <strong>".next(explode(".", basename($v))).'</strong> : &nbsp; &nbsp; <small><a href="'.$v.'" target="_BLANK">Code</a></small> &nbsp; <small><a href="./?mode=00&level=../'.$v.'" target="_BLANK">View</a></small> &nbsp; <small><a href="?queue&approve='.($k).'">Approve</a></small>';
    exit;
 }
 
@@ -693,14 +704,22 @@ if(isset($_REQUEST['js'])){
       echo '}'."\n";
       echo "\n";
       echo 'var submitName = false;'."\n";
+      echo 'var sent       = false;'."\n";
       echo 'function submit_(){'."\n";
       echo '   if(submitName===false){'."\n";
       echo '      submitName = prompt("Choose a name for the maze");'."\n";
       echo '      if(submitName.split(" ").join("").length<=0) submitName = "New Maze";'."\n";
       echo '   }'."\n";
-      echo '   document.getElementById("source:sent").value = "true";'."\n";
-      echo '   document.getElementById("source:name").value = submitName;'."\n";
-      echo '   document.getElementById("source:form").submit();'."\n";
+      echo "\n";
+      echo '   var newWindow = window.open("?queue&form", "Blank Form");'."\n";
+      echo '   newWindow.onload = function(){'."\n";
+      echo '      newWindow.document.getElementById("source:sent").value = sent? "true" : "false";'."\n";
+      echo '      newWindow.document.getElementById("source:name").value = submitName;'."\n";
+      echo '      newWindow.document.getElementById("source:code").value = document.getElementById("source:code").value;'."\n";
+      echo '      newWindow.document.getElementById("source:form").submit();'."\n";
+      echo '      sent = true;'."\n";
+      echo '      document.getElementById("source:container").style.display = "none";'."\n";
+      echo '   }'."\n";
       echo '}'."\n";
    }
    exit;
@@ -1085,17 +1104,13 @@ echo '<table width="100%" height="100%" style="margin-top:35px;">'."\n";
    cont_source:{
    echo '   <tr>'."\n";
    echo '      <td id="source:container" style="display:none;" width="80%" align="center" valign="middle">'."\n";
-   echo '      <form id="source:form" action="?queue&add" method="POST">'."\n";
    echo "\n";
    echo '            <div style="width:400px;">'."\n";
    echo '               <button id="source:hide"   style="float:left;"  onclick="document.getElementById(\'source:container\').style.display=\'none\';">Hide Source</button>'."\n";
    echo '               <button id="source:submit" style="float:right;" onclick="submit_()">Submit</button>'."\n";
    echo '            </div>'."\n";
    echo "\n";
-   echo '            <input type="hidden" id="source:sent" name="sent" value="false" />'."\n";
-   echo '            <input type="hidden" id="source:name" name="name" value="" />'."\n";
    echo '            <textarea id="source:code" name="source" style="text-align: center; width:400px; height:60px;"></textarea>'."\n";
-   echo '         </form>'."\n";
    echo "\n";
    echo '      </td>'."\n";
    echo '   </tr>'."\n";

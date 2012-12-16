@@ -1,4 +1,91 @@
 <?php
+if(isset($_REQUEST['move'])){
+   session_start();
+   $grid     = file("Mazes/".$_REQUEST['game']);
+   $details  = array_shift($grid);
+   $specials = array_shift($grid);
+var_dump($_SESSION);
+      //Parse Specials
+      function handle_special($def){
+         $def = trim($def);
+         global $special;
+
+         if(substr($def,0,1) == 't'){
+            $special['triggers'][ substr($def, 1, strpos($def, ":")-1) ] =
+               array(
+                  substr($def, strpos($def, ":")+1, strpos($def, "-") - strpos($def, ":") -1)
+                  ,
+                  substr($def,  strpos($def, "-")+1)
+               );
+            return true;
+         }
+         if(substr($def,0,1) == 'p'){
+            $e = explode("-", substr($def,1));
+            $special['portals'][$e[0]] = $e[1];
+            $special['portals'][$e[1]] = $e[0];
+            unset($e);
+            return true;
+         }
+         if(substr($def,0,1) == "c"){
+            $special['closures'][substr($def,1)] = true;
+            return true;
+         }
+         return false;
+      }
+      array_walk(explode(",", $specials), "handle_special");
+      //End of Parsing Specials
+
+   //Apply Triggered changes to the grid
+   if(isset($_SESSION['triggers']) && count($_SESSION['triggers'])>0){
+      //Will require overriden-clean-up
+      foreach($_SESSION['triggers'] as $obj){
+         $coor = explode(".", $obj[0]);
+         $grid[$coor[0]] = join(".", array_splice(explode(".", $grid[$coor[0]]), $coor[1], 1, $obj[1] ));
+      }
+   }
+   //End of Applying Triggers
+
+   $current = $_SESSION['current_position']; // Should be fetched from mysql table
+   $directions = array("left", "up", "right", "down");
+
+   //Normal Move
+   if(in_array($_REQUEST['move'], array("left", "up", "right", "down"))){
+      $coor = explode(".", $current);
+      $e = explode(".", $grid[$coor[0]]);
+      $d = array_search($_REQUEST['move'], array("left", "down", "right", "up"));
+
+      if(substr($e[$coor[1]],$d ,1) == 0){
+            $tmp = $coor;
+            if($_REQUEST['move'] == "left")  $tmp[1] = (string)( (int)$tmp[1] -1);
+            if($_REQUEST['move'] == "right") $tmp[1] = (string)( (int)$tmp[1] +1);
+            if($_REQUEST['move'] == "up")    $tmp[0] = (string)( (int)$tmp[0] -1);
+            if($_REQUEST['move'] == "down")  $tmp[0] = (string)( (int)$tmp[0] +1);
+         $current = join(".", $tmp);
+            unset($tmp, $i);
+            unset($e, $d);
+
+         echo "correct";
+      }else
+         exit("wall");
+   }else
+   //Teleport Move
+   if(isset($special['portals'][$_REQUEST['move']]) && !isset($special['closures'][$_REQUEST['move']])){
+      $current = $special['portals'][$_REQUEST['move']];
+
+      echo "teleport";
+   }else
+      exit("lie");
+
+   //If a trigger is set add it for consideration
+   if(isset($special['triggers'][$current])){
+      $_SESSION['triggers'][] = $special['triggers'][$current];////////
+   }
+
+   //Update the current position
+   $_SESSION['current_position'] = $current;
+
+   exit;
+}
 
 if(isset($_REQUEST['js'])){
    if(strlen(trim($_REQUEST['js']))<=0)
@@ -45,6 +132,38 @@ if(isset($_REQUEST['js'])){
       echo '         this.splice(this.indexOf(elements), 1);'."\n";
       echo '      return this;'."\n";
       echo '   }'."\n";
+
+      //Connect Sections (dependency)
+      $_REQUEST['js']='call';
+   }
+   if($_REQUEST['js']=='call'){
+      echo '   xmlhttp = new Array();'."\n";
+      echo "\n";
+      echo 'function call(url, callback, sync){'."\n";
+      echo '   async = (typeof callback == "boolean")? !callback : (sync!=null)? !sync : true;'."\n";
+      echo "\n";
+      echo '   if(window.XMLHttpRequest)'."\n";
+      echo '      var xh = new XMLHttpRequest();'."\n";
+      echo '   else'."\n";
+      echo '   if(window.ActiveXObject)'."\n";
+      echo '      var xh = new ActiveXObject("Microsoft.XMLHTTP");'."\n";
+      echo '   else'."\n";
+      echo '      return false;'."\n";
+      echo "\n";
+      echo "\n";
+      echo '   if(typeof callback != "boolean" && callback!=null)'."\n";
+      echo '      xh.onreadystatechange = function(){'."\n";
+      echo '         if (this.readyState==4 && this.status==200)'."\n";
+      echo '            callback(this.responseText);'."\n";
+      echo '         xmlhttp.splice(xmlhttp.indexOf(this), 1);'."\n";
+      echo '      }'."\n";
+      echo "\n";
+      echo '   xh.open("GET", url, async);'."\n";
+      echo '   xh.send(null);'."\n";
+      echo "\n";
+      echo '   xmlhttp.push(xh);'."\n";
+      echo '   return async? xh : xh.responseText;'."\n";
+      echo '}'."\n";
 
       //Connect Sections (dependency)
       $_REQUEST['js']='main';
@@ -120,33 +239,20 @@ if(isset($_REQUEST['js'])){
       echo '   function move(direction){'."\n";
       echo '      if(gameover) return false;'."\n";
       echo "\n";
-      echo '      if( (["left", "up", "right", "down"]).indexOf(direction)==-1 ){'."\n";
-      echo '         if(tpSickness) return false;'."\n";
-      echo '         tpSickness = true;'."\n";
-      echo "\n";
+      echo '      var sc = call("?move="+direction+"&game="+gamemap, true); //Remove gamename once MySQL kicks in'."\n";
+      echo '      if(sc.indexOf("teleport")!=-1 || sc.indexOf("correct")!=-1){'."\n";
       echo '         unhighlight();'."\n";
-      echo '         current_position = direction;'."\n";
+      echo '         current_position = (sc.indexOf("correct")!=-1)? neighbour(current_position, direction) : direction;'."\n";
+      echo '         tpSickness = (sc.indexOf("teleport")!=-1);'."\n";
       echo "\n";
       echo '         if(current_position == end_position)'."\n";
       echo '            end_maze(true);'."\n";
       echo "\n";
       echo '         show_visables(current_position);'."\n";
       echo '         highlight(current_position);'."\n";
-      echo '      }else'."\n";
-      echo "\n";
-      echo '      if(movable(current_position, direction)){'."\n";
-      echo '         unhighlight();'."\n";
-      echo '         current_position = neighbour(current_position, direction);'."\n";
-      echo "\n";
-      echo '         if(current_position == end_position)'."\n";
-      echo '            end_maze(true);'."\n";
-      echo "\n";
-      echo '         show_visables(current_position);'."\n";
-      echo '         highlight(current_position);'."\n";
-      echo "\n";
-      echo '         tpSickness = false;'."\n";
       echo '      }else'."\n";
       echo '         applyPenelty();'."\n";
+      echo "\n";
       echo '   }'."\n";
 
       //Connect Sections (dependency)
@@ -458,11 +564,15 @@ $specials .= '</script>'."\n";
 }
 
 head:{
+session_start();
+$_SESSION['current_position'] = $details['start'];
+
 echo '<head>'."\n";
 echo '   <title>Maze: '.basename($name).'</title>'."\n";
 echo "\n";
 echo '   <script type="text/javascript" src="?js"></script>'."\n";
 echo '   <script type="text/javascript">'."\n";
+echo '      var gamemap          = "'.basename($name).'";'."\n";
 echo '      var start_position   = "'.$details['start'].'";'."\n";
 echo '      var end_position     = "'.$details['end'].'";'."\n";
 echo '      var maze_time        = '.$details['time'].';'."\n";

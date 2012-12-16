@@ -1,5 +1,5 @@
 portal:  (pP1-P2)     Moves you from P1 (position 1) to P2 (position 2)
-closure: (cP)   Prevents the portals on P (position) to be used (makes it destination-only)
+closure: (cP)         Prevents the portals on P (position) to be used (makes it destination-only)
 shadow:  (bP)         A visible block that blocks sight. Can move through but cannot see through
 trigger: (tP1:P2-C1)  When you move over P1 (position 1), P2 (position 2) changes to C1 (class 1)
 veil:    (vP)         DEFINE AT END to hide any color denotaion of another special for that block
