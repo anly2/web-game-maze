@@ -1,0 +1,28 @@
+### Maze Game ###
+#This is a version file
+#  used for dynamically updating links so that people know there's something new
+#  it also contains the changelogs for a given project
+
+
+version 0
+    - Basic functionality added with a mini test map
+
+version 1
+    - Improved so that it works in all major browsers (except IE as always)
+    - Level linking is now less "encrypted"
+
+version 2
+    - Added the editor which lets you create custom maps
+    - Added more maps and current one reworked for beginners
+
+version 3
+    - Added "specials" like portals and traps (/legend.txt for full info)
+    - Full editor support for "specials" (descriptions, adding, removing, exporting)
+    - Extractables (Speed Boosts and Orbs) now reapply the proper color when collected
+    - Changes will not apply to the game grid when in trigger:phase3 and modifying the affected block
+    - Added a "closure" special which makes a target block "destination-only". In other words portals can now be one-way.
+    - Added a review queue for created mazes. You can now simply click "Submit" and your creation will be sent for approval.
+
+version 3.0.1
+    - Server Side "movable" check that prevents cheating
+    @Triggers aren't working
